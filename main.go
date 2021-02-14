@@ -51,6 +51,9 @@ var enablePin = rpio.Pin(22)
 var led1Pin = rpio.Pin(23)
 var led2Pin = rpio.Pin(24)
 
+var eStopPin = rpio.Pin(26)
+var eStop bool = false
+
 var geoFenceMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	geoFence = string(msg.Payload())
         if geoFence != lgf {
@@ -100,6 +103,8 @@ func init() {
 	enablePin.Output()
 	led1Pin.Output()
 	led2Pin.Output()
+	eStopPin.Input()
+	eStopPin.PullUp()
 }
 
 func main() {
@@ -116,14 +121,14 @@ func main() {
 
 	for !agent.IsTerminated() {
 		switch true {
-		case geoFence == home && chargeDoor == "open":
+		case ( geoFence == home && chargeDoor == "open" ) || eStop:
 		        chargerDirection = "down"
 			enablePin.High()
 			upPin.Low()
 			downPin.High()
 			led2Pin.High()
 			break
-		case geoFence != home || chargeDoor == "closed":
+		case ( geoFence != home || chargeDoor == "closed" ) && !eStop:
 		        chargerDirection = "up"
 			enablePin.High()
 			downPin.Low()
@@ -144,6 +149,10 @@ func main() {
 			led1Pin.High()
 		} else {
 			led1Pin.Low()
+		}
+		if eStopPin.Read() == rpio.Low && !eStop {
+			eStop = true
+			log.Info("E-Stop!")
 		}
 		time.Sleep(loopSleep * time.Millisecond)
 	}
