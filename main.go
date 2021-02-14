@@ -22,15 +22,17 @@ import (
 
 var debug bool = true
 
-var geoFence string = "unset"
-var chargeDoor bool = false
-var chargerDirection string = "down"
+var geoFence string = ""
+var chargeDoor string = ""
+var chargerDirection string = ""
 
-var lastGeoFence string = "unset"
-var lastChargeDoor bool = false
-var lastChargerDirection string = "unset"
+var lastGeoFence string = ""
+var lastChargeDoor string = ""
+var lastChargerDirection string = ""
 
-var carState string = "unset"
+var lgf string = ""
+
+var carState string = ""
 
 
 var host string = "ws://192.168.1.51:9001"
@@ -51,13 +53,23 @@ var led2Pin = rpio.Pin(24)
 
 var geoFenceMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	geoFence = string(msg.Payload())
+        if geoFence != lgf {
+		log.WithFields(log.Fields{"geoFence": geoFence}).Info("MQTT")
+		lgf = geoFence
+	}
 }
 var chargeDoorMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
-	chargeDoor, _ = strconv.ParseBool(string(msg.Payload()))
+        chargeDoorOpen, _ := strconv.ParseBool(string(msg.Payload()))
+	if chargeDoorOpen {
+		chargeDoor = "open"
+	} else {
+		chargeDoor = "closed"
+	}
+	log.WithFields(log.Fields{"chargeDoor": chargeDoor}).Info("MQTT")
 }
 var carStateMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	carState = string(msg.Payload())
-	log.WithFields(log.Fields{"carState": carState}).Info("Car State Change")
+	log.WithFields(log.Fields{"carState": carState}).Info("MQTT")
 }
 
 func getSetting(setting string, defaultValue string) (value string) {
@@ -65,7 +77,7 @@ func getSetting(setting string, defaultValue string) (value string) {
                 log.WithFields(log.Fields{"configFrom": "env", setting: os.Getenv(setting)}).Info()
                 return os.Getenv(setting)
         }
-        log.WithFields(log.Fields{"configFrom": "default", setting: defaultValue}).Info()
+        log.WithFields(log.Fields{"configFrom": "default", setting: defaultValue}).Info("Settings")
         return defaultValue
 }
 
@@ -82,9 +94,6 @@ func init() {
 	lumenHost = getSetting("LUMEN_HOST", lumenHost)
 	car = getSetting("CAR_NUMBER", car)
 	home = getSetting("GEOFENCE_HOME", home)
-	// default to home/open -> failsafe to make sure the charger drops down
-	geoFence = home
-	chargeDoor = true
 	_ = rpio.Open()
 	upPin.Output()
 	downPin.Output()
@@ -104,20 +113,17 @@ func main() {
 	agent.Subscribe(topicPrefix+car+"/geofence", geoFenceMq)
 	agent.Subscribe(topicPrefix+car+"/charge_port_door_open", chargeDoorMq)
 	agent.Subscribe(topicPrefix+car+"/state", carStateMq)
-	log.WithFields(log.Fields{"chargeDoor": chargeDoor, "geoFence":geoFence}).Info("Initial Values")
-	lastChargeDoor = chargeDoor
-	lastGeoFence = geoFence
 
 	for !agent.IsTerminated() {
 		switch true {
-		case geoFence == home && chargeDoor:
+		case geoFence == home && chargeDoor == "open":
 		        chargerDirection = "down"
 			enablePin.High()
 			upPin.Low()
 			downPin.High()
 			led2Pin.High()
 			break
-		case geoFence != home || !chargeDoor:
+		case geoFence != home || chargeDoor == "closed":
 		        chargerDirection = "up"
 			enablePin.High()
 			downPin.Low()
@@ -128,11 +134,11 @@ func main() {
 		if geoFence != lastGeoFence || chargeDoor != lastChargeDoor {
 			lastChargeDoor = chargeDoor
 			lastGeoFence = geoFence
-	                log.WithFields(log.Fields{"chargeDoor": chargeDoor, "geoFence":geoFence}).Info("Changed Values")
+	                log.WithFields(log.Fields{"chargeDoor": chargeDoor, "geoFence":geoFence}).Info("State")
 		}
 		if chargerDirection != lastChargerDirection {
 			lastChargerDirection = chargerDirection
-			log.WithFields(log.Fields{"chargerDirection":chargerDirection}).Info("Direction change")
+			log.WithFields(log.Fields{"chargerDirection":chargerDirection}).Info("Charger")
 		}
                 if carState == "online" {
 			led1Pin.High()
