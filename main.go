@@ -64,13 +64,14 @@ var geoFenceMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) 
 	}
 }
 var chargeDoorMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
-        chargeDoorOpen, _ := strconv.ParseBool(string(msg.Payload()))
+	raw := string(msg.Payload())
+	chargeDoorOpen, _ := strconv.ParseBool(raw)
 	if chargeDoorOpen {
 		chargeDoor = "open"
 	} else {
 		chargeDoor = "closed"
 	}
-	log.WithFields(log.Fields{"chargeDoor": chargeDoor}).Info("MQTT")
+	log.WithFields(log.Fields{"chargeDoor": chargeDoor, "chargeDoorOpen": chargeDoorOpen, "raw": raw}).Info("MQTT")
 }
 var carStateMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	carState = string(msg.Payload())
