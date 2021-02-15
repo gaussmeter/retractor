@@ -54,6 +54,8 @@ var led2Pin = rpio.Pin(24)
 var eStopPin = rpio.Pin(26)
 var eStop bool = false
 
+var lastBlink int64 = time.Now().Unix()
+
 var geoFenceMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	geoFence = string(msg.Payload())
         if geoFence != lgf {
@@ -145,10 +147,18 @@ func main() {
 			lastChargerDirection = chargerDirection
 			log.WithFields(log.Fields{"chargerDirection":chargerDirection}).Info("Charger")
 		}
-                if carState == "online" {
-			led1Pin.High()
-		} else {
-			led1Pin.Low()
+                if eStop {
+			// blink led1Pin
+			if time.Now().Unix() - lastBlink > 1 {
+				lastBlink = time.Now().Unix()
+				led1Pin.Toggle()
+			}
+                } else {
+			if carState == "online" {
+				led1Pin.High()
+			} else {
+				led1Pin.Low()
+			}
 		}
 		if eStopPin.Read() == rpio.Low && !eStop {
 			eStop = true
