@@ -124,14 +124,14 @@ func main() {
 
 	for !agent.IsTerminated() {
 		switch true {
-		case ( geoFence == home && chargeDoor == "open" ) || eStop:
+		case ( ( geoFence == home && chargeDoor == "open" ) && ( geoFence != "" && chargeDoor != "" ) ) || eStop:
 		        chargerDirection = "down"
 			enablePin.High()
 			upPin.Low()
 			downPin.High()
 			led2Pin.High()
 			break
-		case ( geoFence != home || chargeDoor == "closed" ) && !eStop:
+		case ( geoFence != home || chargeDoor == "closed" ) && ( geoFence != "" && chargeDoor != "" ) && !eStop:
 		        chargerDirection = "up"
 			enablePin.High()
 			downPin.Low()
