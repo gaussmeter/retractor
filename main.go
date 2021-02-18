@@ -39,7 +39,6 @@ var host string = "ws://192.168.1.51:9001"
 var car string = "1"
 var home string = "Home"
 var topicPrefix string = "teslamate/cars/"
-var lumenHost string = "http://192.168.1.127:9000/lumen"
 var user string = ""
 var pass string = ""
 var loopSleep time.Duration = 250
@@ -97,7 +96,6 @@ func init() {
 	host = getSetting("MQTT_HOST", host)
 	user = getSetting("MQTT_USER", user)
 	pass = getSetting("MQTT_PASS", pass)
-	lumenHost = getSetting("LUMEN_HOST", lumenHost)
 	car = getSetting("CAR_NUMBER", car)
 	home = getSetting("GEOFENCE_HOME", home)
 	_ = rpio.Open()
