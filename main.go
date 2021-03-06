@@ -57,6 +57,9 @@ var lastBlink int64 = time.Now().Unix()
 
 var geoFenceMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	geoFence = string(msg.Payload())
+        if geoFence == "" {
+                geoFence = "empty"
+        }
         if geoFence != lgf {
 		log.WithFields(log.Fields{"geoFence": geoFence}).Info("MQTT")
 		lgf = geoFence
