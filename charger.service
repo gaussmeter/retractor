@@ -1,0 +1,20 @@
+[Unit]
+Description=Tesla Charger Control Serice
+After=network.target
+
+[Service]
+User=root
+ExecStart=/usr/bin/charger
+Restart=always
+RestartSec=5
+
+# Hardening
+ProtectSystem=full
+PrivateTmp=true
+SystemCallArchitectures=native
+MemoryDenyWriteExecute=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+
