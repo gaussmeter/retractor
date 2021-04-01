@@ -16,8 +16,8 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	ag "github.com/gaussmeter/mqttagent"
 	log "github.com/sirupsen/logrus"
+	rpio "github.com/stianeikeland/go-rpio/v4"
 	randstr "github.com/thanhpk/randstr"
-        rpio "github.com/stianeikeland/go-rpio/v4"
 )
 
 var debug bool = true
@@ -33,7 +33,6 @@ var lastChargerDirection string = ""
 var lgf string = ""
 
 var carState string = ""
-
 
 var host string = "ws://192.168.1.51:9001"
 var car string = "1"
@@ -57,10 +56,10 @@ var lastBlink int64 = time.Now().Unix()
 
 var geoFenceMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	geoFence = string(msg.Payload())
-        if geoFence == "" {
-                geoFence = "empty"
-        }
-        if geoFence != lgf {
+	if geoFence == "" {
+		geoFence = "empty"
+	}
+	if geoFence != lgf {
 		log.WithFields(log.Fields{"geoFence": geoFence}).Info("MQTT")
 		lgf = geoFence
 	}
@@ -80,12 +79,12 @@ var carStateMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) 
 }
 
 func getSetting(setting string, defaultValue string) (value string) {
-        if os.Getenv(setting) != "" {
-                log.WithFields(log.Fields{"configFrom": "env", setting: os.Getenv(setting)}).Info()
-                return os.Getenv(setting)
-        }
-        log.WithFields(log.Fields{"configFrom": "default", setting: defaultValue}).Info("Settings")
-        return defaultValue
+	if os.Getenv(setting) != "" {
+		log.WithFields(log.Fields{"configFrom": "env", setting: os.Getenv(setting)}).Info()
+		return os.Getenv(setting)
+	}
+	log.WithFields(log.Fields{"configFrom": "default", setting: defaultValue}).Info("Settings")
+	return defaultValue
 }
 
 func init() {
@@ -124,15 +123,15 @@ func main() {
 
 	for !agent.IsTerminated() {
 		switch true {
-		case ( ( geoFence == home && chargeDoor == "open" ) && ( geoFence != "" && chargeDoor != "" ) ) || eStop:
-		        chargerDirection = "down"
+		case ((geoFence == home && chargeDoor == "open") && (geoFence != "" && chargeDoor != "")) || eStop:
+			chargerDirection = "down"
 			enablePin.High()
 			upPin.Low()
 			downPin.High()
 			led2Pin.High()
 			break
-		case ( geoFence != home || chargeDoor == "closed" ) && ( geoFence != "" && chargeDoor != "" ) && !eStop:
-		        chargerDirection = "up"
+		case (geoFence != home || chargeDoor == "closed") && (geoFence != "" && chargeDoor != "") && !eStop:
+			chargerDirection = "up"
 			enablePin.High()
 			downPin.Low()
 			upPin.High()
@@ -142,19 +141,19 @@ func main() {
 		if geoFence != lastGeoFence || chargeDoor != lastChargeDoor {
 			lastChargeDoor = chargeDoor
 			lastGeoFence = geoFence
-	                log.WithFields(log.Fields{"chargeDoor": chargeDoor, "geoFence":geoFence}).Info("State")
+			log.WithFields(log.Fields{"chargeDoor": chargeDoor, "geoFence": geoFence}).Info("State")
 		}
 		if chargerDirection != lastChargerDirection {
 			lastChargerDirection = chargerDirection
-			log.WithFields(log.Fields{"chargerDirection":chargerDirection}).Info("Charger")
+			log.WithFields(log.Fields{"chargerDirection": chargerDirection}).Info("Charger")
 		}
-                if eStop {
+		if eStop {
 			// blink led1Pin
-			if time.Now().Unix() - lastBlink > 1 {
+			if time.Now().Unix()-lastBlink > 1 {
 				lastBlink = time.Now().Unix()
 				led1Pin.Toggle()
 			}
-                } else {
+		} else {
 			if carState == "online" {
 				led1Pin.High()
 			} else {
