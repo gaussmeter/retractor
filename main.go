@@ -10,6 +10,7 @@ package main
 
 import (
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -99,14 +100,16 @@ func init() {
 	pass = getSetting("MQTT_PASS", pass)
 	car = getSetting("CAR_NUMBER", car)
 	home = getSetting("GEOFENCE_HOME", home)
-	_ = rpio.Open()
-	upPin.Output()
-	downPin.Output()
-	enablePin.Output()
-	led1Pin.Output()
-	led2Pin.Output()
-	eStopPin.Input()
-	eStopPin.PullUp()
+	if runtime.GOARCH == "arm" {
+		_ = rpio.Open()
+		upPin.Output()
+		downPin.Output()
+		enablePin.Output()
+		led1Pin.Output()
+		led2Pin.Output()
+		eStopPin.Input()
+		eStopPin.PullUp()
+	}
 }
 
 func main() {
@@ -125,17 +128,21 @@ func main() {
 		switch true {
 		case ((geoFence == home && chargeDoor == "open") && (geoFence != "" && chargeDoor != "")) || eStop:
 			chargerDirection = "down"
-			enablePin.High()
-			upPin.Low()
-			downPin.High()
-			led2Pin.High()
+			if runtime.GOARCH == "arm" {
+				enablePin.High()
+				upPin.Low()
+				downPin.High()
+				led2Pin.High()
+			}
 			break
 		case (geoFence != home || chargeDoor == "closed") && (geoFence != "" && chargeDoor != "") && !eStop:
 			chargerDirection = "up"
-			enablePin.High()
-			downPin.Low()
-			upPin.High()
-			led2Pin.Low()
+			if runtime.GOARCH == "arm" {
+				enablePin.High()
+				downPin.Low()
+				upPin.High()
+				led2Pin.Low()
+			}
 			break
 		}
 		if geoFence != lastGeoFence || chargeDoor != lastChargeDoor {
@@ -155,14 +162,20 @@ func main() {
 			}
 		} else {
 			if carState == "online" {
-				led1Pin.High()
+				if runtime.GOARCH == "arm" {
+					led1Pin.High()
+				}
 			} else {
-				led1Pin.Low()
+				if runtime.GOARCH == "arm" {
+					led1Pin.Low()
+				}
 			}
 		}
-		if eStopPin.Read() == rpio.Low && !eStop {
-			eStop = true
-			log.Info("E-Stop!")
+		if runtime.GOARCH == "arm" {
+			if eStopPin.Read() == rpio.Low && !eStop {
+				eStop = true
+				log.Info("E-Stop!")
+			}
 		}
 		time.Sleep(loopSleep * time.Millisecond)
 	}
