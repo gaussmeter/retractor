@@ -70,7 +70,7 @@ var headingMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 		heading = false
 	}
 	if heading != lh {
-		log.WithFields(log.Fields{"heading": heading}).Info("MQTT")
+		log.WithFields(log.Fields{"currentHeading": currentHeading, "heading": heading}).Info("MQTT")
 	}
 }
 
