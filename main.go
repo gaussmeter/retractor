@@ -124,6 +124,7 @@ func init() {
 	pass = getSetting("MQTT_PASS", pass)
 	car = getSetting("CAR_NUMBER", car)
 	home = getSetting("GEOFENCE_HOME", home)
+	log.WithFields(log.Fields{"GOARCH": runtime.GOARCH}).Info("init")
 	if runtime.GOARCH == "arm" {
 		_ = rpio.Open()
 		upPin.Output()
