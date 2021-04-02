@@ -23,15 +23,22 @@ import (
 
 var debug bool = true
 
+var preDrop bool = false
+var preDropStart int64 = time.Now().Unix()
+
 var geoFence string = ""
 var chargeDoor string = ""
 var chargerDirection string = ""
+var heading bool = false
+var shiftState string = ""
 
 var lastGeoFence string = ""
 var lastChargeDoor string = ""
 var lastChargerDirection string = ""
+var lastShiftState string = ""
 
 var lgf string = ""
+var lh bool = false
 
 var carState string = ""
 
@@ -54,6 +61,23 @@ var eStopPin = rpio.Pin(26)
 var eStop bool = false
 
 var lastBlink int64 = time.Now().Unix()
+
+var headingMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
+	currentHeading, _ := strconv.Atoi(string(msg.Payload()))
+	if currentHeading > 340 && currentHeading < 360 && geoFence == home {
+		heading = true
+	} else {
+		heading = false
+	}
+	if heading != lh {
+		log.WithFields(log.Fields{"heading": heading}).Info("MQTT")
+	}
+}
+
+var shiftStateMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
+	shiftState = string(msg.Payload())
+	log.WithFields(log.Fields{"shiftState": shiftState}).Info("MQTT")
+}
 
 var geoFenceMq MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	geoFence = string(msg.Payload())
@@ -123,10 +147,12 @@ func main() {
 	agent.Subscribe(topicPrefix+car+"/geofence", geoFenceMq)
 	agent.Subscribe(topicPrefix+car+"/charge_port_door_open", chargeDoorMq)
 	agent.Subscribe(topicPrefix+car+"/state", carStateMq)
+	agent.Subscribe(topicPrefix+car+"/heading", headingMq)
+	agent.Subscribe(topicPrefix+car+"/shift_state", shiftStateMq)
 
 	for !agent.IsTerminated() {
 		switch true {
-		case ((geoFence == home && chargeDoor == "open") && (geoFence != "" && chargeDoor != "")) || eStop:
+		case ((geoFence == home && chargeDoor == "open") && (geoFence != "" && chargeDoor != "")) || eStop || preDrop:
 			chargerDirection = "down"
 			if runtime.GOARCH == "arm" {
 				enablePin.High()
@@ -144,6 +170,15 @@ func main() {
 				led2Pin.Low()
 			}
 			break
+		}
+		if preDropStart+300 < time.Now().Unix() && preDrop == true {
+			preDrop = false
+			log.WithFields(log.Fields{"preDrop": preDrop}).Info("Charger")
+		}
+		if geoFence == home && heading == true && shiftState == "R" && preDrop == false {
+			preDrop = true
+			preDropStart = time.Now().Unix()
+			log.WithFields(log.Fields{"preDrop": preDrop}).Info("Charger")
 		}
 		if geoFence != lastGeoFence || chargeDoor != lastChargeDoor {
 			lastChargeDoor = chargeDoor
