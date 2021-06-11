@@ -153,25 +153,24 @@ func main() {
 
 	for !agent.IsTerminated() {
 		switch true {
-		case ((geoFence == home && chargeDoor == "open") && (geoFence != "" && chargeDoor != "")) || eStop || preDrop:
+		case eStop:
 			chargerDirection = "down"
-			if runtime.GOARCH == "arm" {
-				enablePin.High()
-				upPin.Low()
-				downPin.High()
-				led2Pin.High()
-			}
+			break
+		case preDrop:
+			chargerDirection = "down"
+			break
+		case (geoFence != home && chargeDoor == "open"):
+			// ocassionally Teslamte sends an empty geofence
+			// do nothing as long as the doore is open.
+			break
+		case (geoFence == home && chargeDoor == "open") && (geoFence != "" && chargeDoor != ""):
+			chargerDirection = "down"
 			break
 		case (geoFence != home || chargeDoor == "closed") && (geoFence != "" && chargeDoor != "") && !eStop:
 			chargerDirection = "up"
-			if runtime.GOARCH == "arm" {
-				enablePin.High()
-				downPin.Low()
-				upPin.High()
-				led2Pin.Low()
-			}
 			break
 		}
+		retractor(chargerDirection)
 		if preDropStart+300 < time.Now().Unix() && preDrop == true {
 			preDrop = false
 			log.WithFields(log.Fields{"preDrop": preDrop}).Info("Charger")
@@ -216,4 +215,23 @@ func main() {
 		time.Sleep(loopSleep * time.Millisecond)
 	}
 
+}
+
+func retractor(direction string) {
+	if runtime.GOARCH == "arm" {
+		switch direction {
+		case "down":
+			enablePin.High()
+			upPin.Low()
+			downPin.High()
+			led2Pin.High()
+			break
+		case "up":
+			enablePin.High()
+			downPin.Low()
+			upPin.High()
+			led2Pin.Low()
+			break
+		}
+	}
 }
