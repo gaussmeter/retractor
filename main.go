@@ -160,8 +160,8 @@ func main() {
 			chargerDirection = "down"
 			break
 		case (geoFence != home && chargeDoor == "open"):
-			// ocassionally Teslamte sends an empty geofence
-			// do nothing as long as the doore is open.
+			// ocassionally Teslmate sends an empty geofence
+			// do nothing as long as the door is open.
 			break
 		case (geoFence == home && chargeDoor == "open") && (geoFence != "" && chargeDoor != ""):
 			chargerDirection = "down"
