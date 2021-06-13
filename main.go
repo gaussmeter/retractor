@@ -159,9 +159,9 @@ func main() {
 		case preDrop:
 			chargerDirection = "down"
 			break
-		case (geoFence != home && chargeDoor == "open"):
+		case (geoFence != home && chargerDirection == "down"):
 			// ocassionally Teslmate sends an empty geofence
-			// do nothing as long as the door is open.
+			// if the charger is down, don't retract.
 			break
 		case (geoFence == home && chargeDoor == "open") && (geoFence != "" && chargeDoor != ""):
 			chargerDirection = "down"
