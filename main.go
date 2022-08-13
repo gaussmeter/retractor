@@ -153,6 +153,9 @@ func main() {
 
 	for !agent.IsTerminated() {
 		switch true {
+		case (carState == "updating"):
+			// if the car is updating don't change charger position.
+			break
 		case eStop:
 			chargerDirection = "down"
 			break
